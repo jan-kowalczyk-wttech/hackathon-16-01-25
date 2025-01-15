@@ -8,5 +8,5 @@ __pycache__
 # CDK asset staging directory
 .cdk.staging
 cdk.out
-lambda_dependencies/
+lambda/dependencies/
 requirements.txt
