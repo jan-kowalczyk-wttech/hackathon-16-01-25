@@ -7,8 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-pillow = "^11.1.0"
-
+aws-lambda-powertools = "^3.4.1"
 
 [tool.poetry.group.dev.dependencies]
 aws-cdk-lib = "^2.175.1"

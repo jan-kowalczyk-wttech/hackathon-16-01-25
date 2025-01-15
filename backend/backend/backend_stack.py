@@ -3,7 +3,7 @@ from aws_cdk import (
 )
 from constructs import Construct
 
-from backend.our_function import OurFunction
+from backend.util.our_function import OurFunction
 
 LAMBDA_DEP = "lambda/dependencies"
 LAMBDA_SRC = "lambda/src"
@@ -12,7 +12,7 @@ class BackendStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
-        self.dependency_layer = _lambda.LayerVersion(
+        dependency_layer = _lambda.LayerVersion(
             self,
             "DependencyLayer",
             code=_lambda.Code.from_asset(LAMBDA_DEP),
