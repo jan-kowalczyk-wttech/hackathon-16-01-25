@@ -1,1 +1,1 @@
-# hackaton-16-01-25
+# AI Hackathon 16-01-25
