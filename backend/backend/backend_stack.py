@@ -20,11 +20,27 @@ class BackendStack(Stack):
             description="A layer with shared dependencies between lambdas",
         )
 
-
-        hello_lambda = OurFunction(
+        self.get_presigned_url_lambda = OurFunction(
             self,
-            "HelloLambda",
+            "GetPresignedUrlLambda",
             runtime=_lambda.Runtime.PYTHON_3_12,
-            code=_lambda.Code.from_asset(f"{LAMBDA_DIR}/hello"),
-            handler="hello.handler"
+            code=_lambda.Code.from_asset(f"{LAMBDA_SRC}/get_presigned_url"),
+            handler="get_presigned_url.lambda_handler",
+            timeout=Duration.minutes(1),
+            dependency_layer=dependency_layer
         )
+
+
+        self.api = aws_apigateway.LambdaRestApi(
+            self,
+            "GetPresignedUrlApi",
+            handler=self.get_presigned_url_lambda,
+            proxy=False
+        )
+
+        items = self.api.root.add_resource("items")
+        items.add_method("GET")
+
+
+# Curl to upload text.txt file to S3 bucket
+# curl -X PUT -T text.txt "https://s3bucketstackuploadbucketd2c1da78r81cvprwbvek.s3.us-west-2.amazonaws.com/text.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential
