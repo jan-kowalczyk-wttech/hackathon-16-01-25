@@ -7,10 +7,13 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
+pillow = "^11.1.0"
+
+
+[tool.poetry.group.dev.dependencies]
 aws-cdk-lib = "^2.175.1"
 constructs = "^10.4.2"
 pytest = "^8.3.4"
-
 
 [build-system]
 requires = ["poetry-core"]
