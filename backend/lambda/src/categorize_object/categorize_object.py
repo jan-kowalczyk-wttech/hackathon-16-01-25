@@ -62,9 +62,11 @@ def lambda_handler(event, context):
         modelId="anthropic.claude-3-sonnet-20240229-v1:0",
         body=body
     )
+
     response_body = json.loads(response.get("body").read())
+
 
     return {
         "statusCode": 200,
-        "body": json.dumps(response_body['content'][0]['text'])
+        "body": json.dumps({response_body['content'][0]['text']})
     }

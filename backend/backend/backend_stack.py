@@ -119,6 +119,7 @@ class BackendStack(Stack):
         )
         self.offers_table.grant_read_write_data(categorize_object)
         self.upload_bucket.grant_read_write(categorize_object)
+        self.actions_table.grant_read_write_data(categorize_object)
         self.add_api_resource(["categorize-object"], "POST", categorize_object)
         return categorize_object
     def define_object_lambda(self):
