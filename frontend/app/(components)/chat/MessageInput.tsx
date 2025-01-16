@@ -89,24 +89,7 @@ export function MessageInput({ username, onSendText, onSendImage, onSendAudio }:
       }
 
 
-      // const response = await fetch(PRESIGNED_ENDPOINT_URL, {
-      //   method: 'GET',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      // });
-
-      // const data = await response.json();
-      // if (!response.ok) {
-      //   throw new Error('Failed to get presigned URL');
-      // }
-
-      // console.log('data', data);
-      // const presignedUrl = data["presigned_url"]
-
       console.log("uri", uri)
-
-      // Step 2: Read the image file and create blob
       const presignedUrl = await get_presigned_url()
       const imageResponse = await fetch(uri);
       const imageBlob = await imageResponse.blob();
