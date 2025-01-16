@@ -24,14 +24,14 @@ class BackendStack(Stack):
         dependency_layer = self.create_lambda_dependency_layer()
 
         self.offers_table = self.create_table_offers()
+        self.offer_creators_table = self.create_table_offer_creators()
 
         self.api = aws_apigateway.RestApi(self, f"{self.stack_name}BackendApi", deploy=True)
-
         self.presigned_url = self.get_presigned_url_lambda(dependency_layer)
         self.list_offers = self.get_list_offers_lambda()
         self.get_offer_by_id = self.get_offer_by_id_lambda()
-
         self.define_object = self.define_object_lambda()
+        self.create_offer_creator_lambda = self.create_offer_creator_lambda()
 
     def get_presigned_url_lambda(self, dependency_layer: LayerVersion):
         presigned_url = OurFunction(
@@ -107,6 +107,22 @@ class BackendStack(Stack):
         self.add_api_resource(["define-object"], "POST", define_object)
         return define_object
 
+    def create_offer_creator_lambda(self):
+        create_offer_creator = Function(
+            self,
+            f"{self.stack_name}CreateOfferCreatorLambda",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            code=_lambda.Code.from_asset(f"{LAMBDA_SRC}/create_offer_creator"),
+            handler="create_offer_creator.lambda_handler",
+            timeout=Duration.minutes(1),
+            environment={
+                'OFFER_CREATORS_TABLE': self.offer_creators_table.table_name
+            }
+        )
+        self.offer_creators_table.grant_read_write_data(create_offer_creator)
+        self.add_api_resource(["create-offer-creator"], "POST", create_offer_creator)
+        return create_offer_creator
+
     def create_lambda_dependency_layer(self):
         return _lambda.LayerVersion(
             self,
@@ -132,6 +148,22 @@ class BackendStack(Stack):
           billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
           removal_policy=RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE
       )
+
+    def create_table_offer_creators(self):
+        table = dynamodb.Table(
+          self,
+      f"{self.stack_name}OfferCreators",
+          partition_key=dynamodb.Attribute(name="id",type=dynamodb.AttributeType.STRING),
+          billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+          removal_policy=RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE
+        )
+
+        table.add_global_secondary_index(
+            index_name="UserIdIndex",
+            partition_key=dynamodb.Attribute(name="user_id", type=dynamodb.AttributeType.STRING)
+        )
+
+        return table
 
     def add_api_resource(self, path: list[str], method: str, handler: Function):
         current_resource = self.api.root
