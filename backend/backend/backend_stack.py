@@ -185,11 +185,11 @@ class BackendStack(Stack):
             handler="create_complete_offer.lambda_handler",
             timeout=Duration.minutes(1),
             environment={
-                'OFFER_CREATORS_TABLE': self.offer_creators_table.table_name,
+                'OFFER_TABLE': self.offers_table.table_name,
                 'ACTIONS_TABLE': self.actions_table.table_name
             }
         )
-        self.offer_creators_table.grant_read_write_data(create_complete_offer)
+        self.offers_table.grant_read_write_data(create_complete_offer)
         self.actions_table.grant_read_write_data(create_complete_offer)
         self.add_api_resource(["create-complete-offer"], "POST", create_complete_offer)
         return create_complete_offer

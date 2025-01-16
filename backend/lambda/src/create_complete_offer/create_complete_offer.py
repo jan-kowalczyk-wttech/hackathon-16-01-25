@@ -29,7 +29,7 @@ def lambda_handler(event, context):
         user_id = body['user_id']
         creator_id = body['creator_id']
         action_table = os.environ['ACTIONS_TABLE']
-        offer_table = os.environ['OFFER_CREATORS_TABLE']
+        offer_table = os.environ['OFFER_TABLE']
 
         responses = dynamodb.Table(action_table).scan().get('Items')
         creator_results = []
