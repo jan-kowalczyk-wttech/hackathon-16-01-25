@@ -15,7 +15,7 @@ def lambda_handler(event, context):
 
         directory = f'{user_id}/{creator_id}/image'
         response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=directory)
-        number_of_objects_in_directory = len(response.get('Contents', [1]))
+        number_of_objects_in_directory = len(response.get('Contents', [])) + 1
         image_name = f"{number_of_objects_in_directory}.jpg"
 
         presigned_url = s3_client.generate_presigned_url('put_object',
