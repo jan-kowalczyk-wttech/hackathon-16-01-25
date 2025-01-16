@@ -21,8 +21,9 @@ s3_client = boto3.client("s3", region)
 
 
 def lambda_handler(event, context):
-    user_id = event.get("user_id")
-    creator_id = event.get("creator_id")
+    body = json.loads(event['body'])
+    user_id = body['user_id']
+    creator_id = body['creator_id']
     bucket_name = os.environ['BUCKET_NAME']
 
     directory = f'{user_id}/{creator_id}/image'
