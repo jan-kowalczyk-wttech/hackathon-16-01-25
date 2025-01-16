@@ -14,11 +14,16 @@ table = dynamodb.Table(os.environ['ACTIONS_TABLE'])
 prompt = """
 
 Human:
-Please review the attached database row to ensure all fields are complete. 
+Please review the attached database row to ensure all fields are complete.
+Response only in JSON format with the following fields:
+- all_data_collected: (true if needed information is complete, false if not)
+- answer: (a concise message for the user)
 Identify any null or missing fields, and prioritize them by importance if multiple fields are incomplete. 
 
-Based on your analysis, generate a very short, one sentence, concise and friendly message for the user. 
-The message should indicate which part of the book they should photograph to provide the missing information.
+Based on your analysis, generate a very short, one sentence, concise, precise and friendly message for the user. 
+The message should indicate which part of the book user should photograph to provide the missing information.
+If all fields are complete, please indicate that all data has been collected.
+Please ensure the response is in valid JSON format.
 
 Assistant:"""
 
