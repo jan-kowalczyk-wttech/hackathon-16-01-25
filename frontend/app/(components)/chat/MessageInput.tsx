@@ -3,53 +3,61 @@ import { StyleSheet, View, TextInput, TouchableOpacity, Alert } from 'react-nati
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
-import { sendToAWS } from '../../(services)/api/lambda';
-import * as FileSystem from 'expo-file-system';
+import { sendImageToChat, sendToAWS, createCreator } from '../../(services)/api/lambda';
 
-const PRESIGNED_ENDPOINT_URL = 'https://yh8cmasjvk.execute-api.us-west-2.amazonaws.com/prod/get-presigned-url';
+const PRESIGNED_ENDPOINT_URL = 'https://yh8cmasjvk.execute-api.us-west-2.amazonaws.com/prod/get-presigned-url/{user_id}/{creator_id}';
+const GET_CREATOR_ID_URL = 'https://yh8cmasjvk.execute-api.us-west-2.amazonaws.com/prod/get-active-creator/{user_id}';
+
+
 interface MessageInputProps {
   username: string;
+  is_new_conversation: boolean;
   onSendText: (text: string, is_user: boolean) => void;
   onSendImage: (uri: string) => void;
   onSendAudio: (uri: string) => void;
 }
 
-async function uploadImageToS3(presignedUrl: string, file: string) {
-  try {
-      const response = await fetch(presignedUrl, {
-          method: 'PUT',
-          body: file
-      });
-
-      if (!response.ok) {
-          throw new Error('Failed to upload image to S3');
-      }
-
-      console.log('Image uploaded successfully');
-  } catch (error) {
-      console.error('Error uploading image:', error);
-  }
-}
-
-
-
-export function MessageInput({ username, onSendText, onSendImage, onSendAudio }: MessageInputProps) {
+export function MessageInput({ username, is_new_conversation, onSendText, onSendImage, onSendAudio }: MessageInputProps) {
   const [text, setText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const recordingRef = useRef<Audio.Recording | null>(null);
 
+ 
+
+  const getCreatorId = async () => {
+    const result = await fetch(GET_CREATOR_ID_URL.replace('{user_id}', username))
+    const body = await result.json()
+    console.log("get active creator result: ", body)
+    return body["offer_creator"]["id"];
+  }
+
   const handleSendText = async () => {
     if (text.trim()) {
+      onSendText(text.trim(), true);
+      setText('');
 
-      // data with user message and bool is_image set to false
+      // if it is the first message, create a new creator
+      let creator_id = "";
+      if (is_new_conversation) {
+        console.log("Creating new creator for user: ", username)
+        const data = {
+          user_id: username
+        };
+        creator_id = (await createCreator(data)).creator_id!;
+      }
+      else {
+        creator_id = await getCreatorId();
+      }
+
+      console.log("creator_id: ", creator_id)
+
       const data = {
         message: text.trim(),
         is_image: false,
         timestamp: new Date().toISOString(),
-        user_id: username  // Include username in the request
+        user_id: username,
+        creator_id: creator_id
       };
-      onSendText(text.trim(), true);
-      setText('');
       
       try {
         // Send message to Lambda
@@ -80,31 +88,25 @@ export function MessageInput({ username, onSendText, onSendImage, onSendAudio }:
 
   const uploadImage = async (uri: string) => {
     try {
-      // Step 1: Get presigned URL
+      onSendImage(uri);
 
+
+      const creator_id = await getCreatorId();
+
+      // get presigned url  
+      console.log("getting presigned url for user: ", username, " and creator: ", creator_id)
       const get_presigned_url = async () => {
-        const result = await fetch("https://wpusf87tnj.execute-api.us-west-2.amazonaws.com/prod/get-presigned-url")
+        const result = await fetch(PRESIGNED_ENDPOINT_URL.replace('{user_id}', username).replace('{creator_id}', creator_id))
         const body = await result.json()
         return body["presigned_url"]
       }
 
 
-      console.log("uri", uri)
       const presignedUrl = await get_presigned_url()
+      console.log("presignedUrl: ", presignedUrl)
+        
       const imageResponse = await fetch(uri);
       const imageBlob = await imageResponse.blob();
-
-      // Add these debug logs
-      console.log('Presigned URL:', presignedUrl);
-      console.log('Image blob size:', imageBlob.size);
-      console.log('Image blob type:', imageBlob.type);
-      // console.log('Image blob:', imageBlob);
-
-      // const file = new File([imageBlob], 'image.jpg', { type: 'image/jpeg' });
-
-      // const file = await fs.readFileSync(uri);
-
-      // const blob = new Blob([file], { type: 'image/jpeg' });
       
       const uploadResponse = await fetch(presignedUrl, {
         method: 'PUT',
@@ -115,10 +117,16 @@ export function MessageInput({ username, onSendText, onSendImage, onSendAudio }:
         throw new Error(`Upload failed with status: ${uploadResponse.status}`);
       }
 
-      // Get the public URL from the presigned URL by removing query parameters
-      const publicUrl = presignedUrl.split('?')[0];
-      onSendImage(publicUrl);
-      Alert.alert('Success', 'Image uploaded successfully');
+      // send image to chat
+      const data = {
+        message: "",
+        user_id: username,  // Include username in the request
+        creator_id: creator_id
+      };
+      console.log("sending image to chat: ", data)
+      const response = await sendImageToChat(data);
+      console.log("response after sending image to chat: ", response)
+      onSendText(response["message"], false);
 
     } catch (error) {
       console.error('Upload error:', error);
