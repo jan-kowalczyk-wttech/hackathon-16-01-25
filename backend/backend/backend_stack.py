@@ -28,6 +28,7 @@ class BackendStack(Stack):
 
         self.presigned_url = self.get_presigned_url_lambda(dependency_layer)
         self.list_offers = self.get_list_offers_lambda()
+        self.get_offer_by_id = self.get_offer_by_id_lambda()
 
     def get_presigned_url_lambda(self, dependency_layer: LayerVersion):
         presigned_url = OurFunction(
@@ -43,7 +44,7 @@ class BackendStack(Stack):
             }
         )
         self.upload_bucket.grant_read_write(presigned_url)
-        self.add_api_resource("get-presigned-url", "GET", presigned_url)
+        self.add_api_resource(["get-presigned-url"], "GET", presigned_url)
         return presigned_url
 
     def get_list_offers_lambda(self):
@@ -59,11 +60,24 @@ class BackendStack(Stack):
             }
         )
         self.offers_table.grant_read_data(list_offers)
-        self.add_api_resource("list-offers", "GET", list_offers)
+        self.add_api_resource(["list-offers"], "GET", list_offers)
         return list_offers
 
-
-
+    def get_offer_by_id_lambda(self):
+        get_offer_by_id = Function(
+            self,
+            f"{self.stack_name}GetOfferByIdLambda",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            code=_lambda.Code.from_asset(f"{LAMBDA_SRC}/get_offer_by_id"),
+            handler="get_offer_by_id.lambda_handler",
+            timeout=Duration.minutes(1),
+            environment={
+                'OFFERS_TABLE': self.offers_table.table_name
+            }
+        )
+        self.offers_table.grant_read_data(get_offer_by_id)
+        self.add_api_resource(["get_offer","{id}"], "GET", get_offer_by_id)
+        return get_offer_by_id
 
     def create_lambda_dependency_layer(self):
         return _lambda.LayerVersion(
@@ -92,5 +106,10 @@ class BackendStack(Stack):
           removal_policy=RemovalPolicy.DESTROY
       )
 
-    def add_api_resource(self, path: str, method: str, handler: Function):
-        self.api.root.add_resource(path).add_method(method, LambdaIntegration(handler))
+    def add_api_resource(self, path: list[str], method: str, handler: Function):
+        current_resource = self.api.root
+        for p in path:
+            current_resource = current_resource.add_resource(p)
+        current_resource.add_method(method, LambdaIntegration(handler))
+
+
