@@ -34,6 +34,7 @@ class BackendStack(Stack):
         
         self.check_needed_information = self.check_needed_information_lambda()
         self.create_offer_creator_lambda = self.create_offer_creator_lambda()
+        self.create_complete_offer = self.create_complete_offer_lambda()
         self.active_creator_lambda = self.get_active_creator_lambda()
         self.get_price = self.get_price_lambda()
 
@@ -155,6 +156,24 @@ class BackendStack(Stack):
         self.offer_creators_table.grant_read_write_data(create_offer_creator)
         self.add_api_resource(["create-offer-creator"], "POST", create_offer_creator)
         return create_offer_creator
+
+    def create_complete_offer_lambda(self):
+        create_complete_offer = OurFunction(
+            self,
+            f"{self.stack_name}CreateCompleteOfferLambda",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            code=_lambda.Code.from_asset(f"{LAMBDA_SRC}/create_complete_offer"),
+            handler="create_complete_offer.lambda_handler",
+            timeout=Duration.minutes(1),
+            environment={
+                'OFFER_CREATORS_TABLE': self.offer_creators_table.table_name,
+                'ACTIONS_TABLE': self.actions_table.table_name
+            }
+        )
+        self.offer_creators_table.grant_read_write_data(create_complete_offer)
+        self.actions_table.grant_read_write_data(create_complete_offer)
+        self.add_api_resource(["create-complete-offer"], "POST", create_complete_offer)
+        return create_complete_offer
     
     def check_needed_information_lambda(self):
         check_needed_information = OurFunction(
