@@ -21,12 +21,15 @@ s3_client = boto3.client("s3", region)
 
 
 def lambda_handler(event, context):
-    uuid = event.get("uuid")
+    user_id = event.get("user_id")
+    creator_id = event.get("creator_id")
+    bucket_name = os.environ['BUCKET_NAME']
 
-    image = s3_client.get_object(
-        Bucket=os.environ['BUCKET_NAME'],
-        Key=f"{uuid}/image.jpg"
-    )
+    directory = f'{user_id}/{creator_id}/image'
+    response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=directory)
+
+    image = response['Contents'][-1]
+    image = s3_client.get_object(Bucket=bucket_name, Key=image['Key'])
 
     image_bytes = image['Body'].read()
     encoded_image = base64.b64encode(image_bytes).decode("utf-8")
