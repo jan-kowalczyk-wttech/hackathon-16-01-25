@@ -65,7 +65,7 @@ class BackendStack(Stack):
         )
         # "{creator_id}"
         self.upload_bucket.grant_read_write(presigned_url)
-        self.add_api_resource(["get-presigned-url","{user_id}"], "GET", presigned_url)
+        self.add_api_resource(["get-presigned-url","{user_id}","{creator_id}"], "GET", presigned_url)
         return presigned_url
     def get_list_offers_lambda(self):
         list_offers = OurFunction(
