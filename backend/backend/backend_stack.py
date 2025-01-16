@@ -114,7 +114,8 @@ class BackendStack(Stack):
                 )
             ],
             environment={
-                'BUCKET_NAME': self.upload_bucket.bucket_name
+                'BUCKET_NAME': self.upload_bucket.bucket_name,
+                'ACTIONS_TABLE': self.actions_table.table_name
             }
         )
         self.offers_table.grant_read_write_data(categorize_object)
