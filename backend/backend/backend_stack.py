@@ -30,6 +30,8 @@ class BackendStack(Stack):
         self.list_offers = self.get_list_offers_lambda()
         self.get_offer_by_id = self.get_offer_by_id_lambda()
 
+        self.define_object = self.define_object_lambda()
+
     def get_presigned_url_lambda(self, dependency_layer: LayerVersion):
         presigned_url = OurFunction(
             self,
@@ -78,6 +80,23 @@ class BackendStack(Stack):
         self.offers_table.grant_read_data(get_offer_by_id)
         self.add_api_resource(["get_offer","{id}"], "GET", get_offer_by_id)
         return get_offer_by_id
+
+    def define_object_lambda(self):
+        define_object = Function(
+            self,
+            f"{self.stack_name}DefineObjectLambda",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            code=_lambda.Code.from_asset(f"{LAMBDA_SRC}/define_object"),
+            handler="define_object.lambda_handler",
+            timeout=Duration.minutes(1),
+            environment={
+                'BUCKET_NAME': self.upload_bucket.bucket_name
+            }
+        )
+        self.offers_table.grant_read_write_data(define_object)
+        self.upload_bucket.grant_read_write(define_object)
+        self.add_api_resource(["define-object"], "POST", define_object)
+        return define_object
 
     def create_lambda_dependency_layer(self):
         return _lambda.LayerVersion(
