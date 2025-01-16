@@ -92,8 +92,7 @@ class BackendStack(Stack):
         return Bucket(
             self,
             f"{self.stack_name}UploadBucket",
-            removal_policy=RemovalPolicy.DESTROY,
-            auto_delete_objects=True,
+            removal_policy=RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE,
             access_control=BucketAccessControl.BUCKET_OWNER_FULL_CONTROL
         )
 
@@ -103,7 +102,7 @@ class BackendStack(Stack):
       f"{self.stack_name}Offers",
           partition_key=dynamodb.Attribute(name="id",type=dynamodb.AttributeType.STRING),
           billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
-          removal_policy=RemovalPolicy.DESTROY
+          removal_policy=RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE
       )
 
     def add_api_resource(self, path: list[str], method: str, handler: Function):
