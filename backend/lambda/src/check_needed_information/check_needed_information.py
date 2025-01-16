@@ -9,19 +9,23 @@ dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['OFFER_CREATORS_TABLE'])
 
 prompt = """
+
+Human:
 Please review the attached database row to ensure all fields are complete. 
 Identify any null or missing fields, and prioritize them by importance if multiple fields are incomplete. 
 
 Based on your analysis, generate a very short, one sentence, concise and friendly message for the user. 
 The message should indicate which part of the book they should photograph to provide the missing information.
-"""
+
+Assistant:"""
 
 def lambda_handler(event, context):
-    
-    offer_id = event['pathParameters']['id']
+    body = json.loads(event['body'])
+    user_id = body.get("user_id")
+    creator_id = body.get("creator_id")
     
     try:
-        response = table.get_item(Key={'id': offer_id})
+        response = table.get_item(Key={'id': creator_id})
         item = response.get('Item')
         if not item:
             return {
