@@ -165,10 +165,10 @@ class BackendStack(Stack):
                 )
             ],
             environment={
-                'OFFER_CREATORS_TABLE': self.offer_creators_table.table_name
+                'ACTIONS_TABLE': self.actions_table.table_name
             }
         )
-        self.offer_creators_table.grant_read_write_data(check_needed_information)
+        self.actions_table.grant_read_write_data(check_needed_information)
         self.add_api_resource(["check-needed-information"], "POST", check_needed_information)
         return check_needed_information
     def get_active_creator_lambda(self):
