@@ -34,6 +34,9 @@ class BackendStack(Stack):
         self.check_input = self.check_input_lambda()
         self.categorize_object = self.categorize_object_lambda()
         self.define_object = self.define_object_lambda()
+        
+        
+        self.check_needed_information = self.check_needed_information_lambda()
         self.create_offer_creator_lambda = self.create_offer_creator_lambda()
         self.active_creator_lambda = self.get_active_creator_lambda()
 
@@ -165,6 +168,29 @@ class BackendStack(Stack):
         self.offer_creators_table.grant_read_write_data(create_offer_creator)
         self.add_api_resource(["create-offer-creator"], "POST", create_offer_creator)
         return create_offer_creator
+    
+    def check_needed_information_lambda(self):
+        check_needed_information = Function(
+            self,
+            f"{self.stack_name}CheckNeededInformationLambda",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            code=_lambda.Code.from_asset(f"{LAMBDA_SRC}/check_needed_information"),
+            handler="check_needed_information.lambda_handler",
+            timeout=Duration.minutes(1),
+            initial_policy=[
+                PolicyStatement(
+                    effect=Effect.ALLOW,
+                    actions= ['bedrock:InvokeModel'],
+                    resources=['*']
+                )
+            ],
+            environment={
+                'OFFER_CREATORS_TABLE': self.offer_creators_table.table_name
+            }
+        )
+        self.offer_creators_table.grant_read_write_data(check_needed_information)
+        self.add_api_resource(["check-needed-information"], "POST", check_needed_information)
+        return check_needed_information
 
     def create_lambda_dependency_layer(self):
         return _lambda.LayerVersion(
