@@ -35,6 +35,7 @@ class BackendStack(Stack):
         self.check_needed_information = self.check_needed_information_lambda()
         self.create_offer_creator_lambda = self.create_offer_creator_lambda()
         self.active_creator_lambda = self.get_active_creator_lambda()
+        self.get_price = self.get_price_lambda()
 
     # LAMBDAS
     def get_presigned_url_lambda(self):
@@ -53,6 +54,7 @@ class BackendStack(Stack):
         self.upload_bucket.grant_read_write(presigned_url)
         self.add_api_resource(["get-presigned-url","{user_id}","{creator_id}"], "GET", presigned_url)
         return presigned_url
+    
     def get_list_offers_lambda(self):
         list_offers = OurFunction(
             self,
@@ -68,6 +70,7 @@ class BackendStack(Stack):
         self.offers_table.grant_read_data(list_offers)
         self.add_api_resource(["list-offers"], "GET", list_offers)
         return list_offers
+    
     def get_offer_by_id_lambda(self):
         get_offer_by_id = OurFunction(
             self,
@@ -84,6 +87,7 @@ class BackendStack(Stack):
         self.add_api_resource(["get_offer","{id}"], "GET", get_offer_by_id)
 
         return get_offer_by_id
+    
     def categorize_object_lambda(self):
         categorize_object = OurFunction(
             self,
@@ -109,6 +113,7 @@ class BackendStack(Stack):
         self.actions_table.grant_read_write_data(categorize_object)
         self.add_api_resource(["categorize-object"], "POST", categorize_object)
         return categorize_object
+    
     def define_object_lambda(self):
         define_object = OurFunction(
             self,
@@ -134,6 +139,7 @@ class BackendStack(Stack):
         self.actions_table.grant_read_write_data(define_object)
         self.add_api_resource(["define-object"], "POST", define_object)
         return define_object
+    
     def create_offer_creator_lambda(self):
         create_offer_creator = OurFunction(
             self,
@@ -149,6 +155,7 @@ class BackendStack(Stack):
         self.offer_creators_table.grant_read_write_data(create_offer_creator)
         self.add_api_resource(["create-offer-creator"], "POST", create_offer_creator)
         return create_offer_creator
+    
     def check_needed_information_lambda(self):
         check_needed_information = OurFunction(
             self,
@@ -171,6 +178,7 @@ class BackendStack(Stack):
         self.actions_table.grant_read_write_data(check_needed_information)
         self.add_api_resource(["check-needed-information"], "POST", check_needed_information)
         return check_needed_information
+    
     def get_active_creator_lambda(self):
         get_active_creator = OurFunction(
             self,
@@ -186,6 +194,25 @@ class BackendStack(Stack):
         self.offer_creators_table.grant_read_data(get_active_creator)
         self.add_api_resource(["get-active-creator", '{user_id}'], "GET", get_active_creator)
         return get_active_creator
+    
+    def get_price_lambda(self):
+        get_price = OurFunction(
+            self,
+            f"{self.stack_name}GetPriceLambda",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            code=_lambda.Code.from_asset(f"{LAMBDA_SRC}/get_price"),
+            handler="get_price.lambda_handler",
+            timeout=Duration.minutes(1),
+            initial_policy=[
+                PolicyStatement(
+                    effect=Effect.ALLOW,
+                    actions= ['bedrock:InvokeModel'],
+                    resources=['*']
+                )
+            ]
+        )
+        self.add_api_resource(["get_price"], "POST", get_price)
+        return get_price
 
     # TABLES
     def create_table_offers(self):
