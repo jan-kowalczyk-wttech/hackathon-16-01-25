@@ -1,7 +1,9 @@
+
 import base64
 import json
 import boto3
 import os
+
 prompt = """
 
 Human:
@@ -21,20 +23,22 @@ Feel free to include any relevant details or observations in the answer field.
 
 Assistant:"""
 
-runtime = boto3.client("bedrock-runtime", "us-west-2")
+region = "us-west-2"
+runtime = boto3.client("bedrock-runtime", region)
+s3_client = boto3.client("s3", region)
 
-s3_client = boto3.client("s3", "us-west-2")
 
 def lambda_handler(event, context):
-    bucket_name = os.environ['BUCKET_NAME']
+    uuid = event.get("uuid")
 
-    encoded_name = base64.b64encode(event.get(body["uuid"])).decode("utf-8")
-    source_key =f"{encoded_name}/image.jpg"
     image = s3_client.get_object(
-        Bucket=bucket_name,
-        Key=source_key
+        Bucket=os.environ['BUCKET_NAME'],
+        Key=f"{uuid}/image.jpg"
     )
-    encoded_image = base64.b64encode(image)
+
+    image_bytes = image.read()
+    encoded_image = base64.b64encode(image_bytes).decode("utf-8")
+
     body = json.dumps(
         {
             "anthropic_version": "bedrock-2023-05-31",
