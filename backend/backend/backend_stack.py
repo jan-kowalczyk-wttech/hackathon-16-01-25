@@ -4,10 +4,10 @@ from aws_cdk import (
 )
 from aws_cdk.aws_apigateway import LambdaIntegration
 from aws_cdk.aws_iam import PolicyStatement, Effect
-from aws_cdk.aws_lambda import LayerVersion, Function
 from aws_cdk.aws_s3 import Bucket, BucketAccessControl
 from constructs import Construct
 
+from backend.ourlambda import OurFunction
 
 LAMBDA_DEP = "lambda/dependencies"
 LAMBDA_SRC = "lambda/src"
@@ -37,8 +37,9 @@ class BackendStack(Stack):
         self.create_offer_creator_lambda = self.create_offer_creator_lambda()
         self.active_creator_lambda = self.get_active_creator_lambda()
 
+    # LAMBDAS
     def check_input_lambda(self):
-        check_input = Function(
+        check_input = OurFunction(
             self,
             f"{self.stack_name}CheckInputLambda",
             runtime=_lambda.Runtime.PYTHON_3_12,
@@ -50,9 +51,8 @@ class BackendStack(Stack):
         self.upload_bucket.grant_read_write(check_input)
         self.add_api_resource(["check-input"], "POST", check_input)
         return check_input
-
     def get_presigned_url_lambda(self):
-        presigned_url = Function(
+        presigned_url = OurFunction(
             self,
             f"{self.stack_name}GetPresignedUrlLambda",
             runtime=_lambda.Runtime.PYTHON_3_12,
@@ -63,12 +63,12 @@ class BackendStack(Stack):
                 'BUCKET_NAME': self.upload_bucket.bucket_name
             }
         )
+        # "{creator_id}"
         self.upload_bucket.grant_read_write(presigned_url)
-        self.add_api_resource(["get-presigned-url","{user_id}","{offer_id}"], "GET", presigned_url)
+        self.add_api_resource(["get-presigned-url","{user_id}"], "GET", presigned_url)
         return presigned_url
-
     def get_list_offers_lambda(self):
-        list_offers = Function(
+        list_offers = OurFunction(
             self,
             f"{self.stack_name}ListOffersLambda",
             runtime=_lambda.Runtime.PYTHON_3_12,
@@ -82,9 +82,8 @@ class BackendStack(Stack):
         self.offers_table.grant_read_data(list_offers)
         self.add_api_resource(["list-offers"], "GET", list_offers)
         return list_offers
-
     def get_offer_by_id_lambda(self):
-        get_offer_by_id = Function(
+        get_offer_by_id = OurFunction(
             self,
             f"{self.stack_name}GetOfferByIdLambda",
             runtime=_lambda.Runtime.PYTHON_3_12,
@@ -99,9 +98,8 @@ class BackendStack(Stack):
         self.add_api_resource(["get_offer","{id}"], "GET", get_offer_by_id)
 
         return get_offer_by_id
-
     def categorize_object_lambda(self):
-        categorize_object = Function(
+        categorize_object = OurFunction(
             self,
             f"{self.stack_name}CategorizeObjectLambda",
             runtime=_lambda.Runtime.PYTHON_3_12,
@@ -123,9 +121,8 @@ class BackendStack(Stack):
         self.upload_bucket.grant_read_write(categorize_object)
         self.add_api_resource(["categorize-object"], "POST", categorize_object)
         return categorize_object
-
     def define_object_lambda(self):
-        define_object = Function(
+        define_object = OurFunction(
             self,
             f"{self.stack_name}DefineObjectLambda",
             runtime=_lambda.Runtime.PYTHON_3_12,
@@ -147,9 +144,8 @@ class BackendStack(Stack):
         self.upload_bucket.grant_read_write(define_object)
         self.add_api_resource(["define-object"], "POST", define_object)
         return define_object
-
     def create_offer_creator_lambda(self):
-        create_offer_creator = Function(
+        create_offer_creator = OurFunction(
             self,
             f"{self.stack_name}CreateOfferCreatorLambda",
             runtime=_lambda.Runtime.PYTHON_3_12,
@@ -163,9 +159,8 @@ class BackendStack(Stack):
         self.offer_creators_table.grant_read_write_data(create_offer_creator)
         self.add_api_resource(["create-offer-creator"], "POST", create_offer_creator)
         return create_offer_creator
-    
     def check_needed_information_lambda(self):
-        check_needed_information = Function(
+        check_needed_information = OurFunction(
             self,
             f"{self.stack_name}CheckNeededInformationLambda",
             runtime=_lambda.Runtime.PYTHON_3_12,
@@ -186,9 +181,8 @@ class BackendStack(Stack):
         self.offer_creators_table.grant_read_write_data(check_needed_information)
         self.add_api_resource(["check-needed-information"], "POST", check_needed_information)
         return check_needed_information
-
     def get_active_creator_lambda(self):
-        get_active_creator = Function(
+        get_active_creator = OurFunction(
             self,
             f"{self.stack_name}GetActiveCreatorLambda",
             runtime=_lambda.Runtime.PYTHON_3_12,
@@ -203,14 +197,7 @@ class BackendStack(Stack):
         self.add_api_resource(["get-active-creator", '{user_id}'], "GET", get_active_creator)
         return get_active_creator
 
-    def create_upload_bucket(self):
-        return Bucket(
-            self,
-            f"{self.stack_name}UploadBucket",
-            removal_policy=RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE,
-            access_control=BucketAccessControl.BUCKET_OWNER_FULL_CONTROL
-        )
-
+    # TABLES
     def create_table_offers(self):
         return dynamodb.Table(
           self,
@@ -220,7 +207,6 @@ class BackendStack(Stack):
           billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
           removal_policy=RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE
         )
-
     def create_table_offer_creators(self):
         table = dynamodb.Table(
           self,
@@ -232,7 +218,6 @@ class BackendStack(Stack):
         )
 
         return table
-
     def create_table_actions(self):
         return dynamodb.Table(
           self,
@@ -242,7 +227,17 @@ class BackendStack(Stack):
           removal_policy=RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE
       )
 
-    def add_api_resource(self, path: list[str], method: str, handler: Function):
+    # BUCKET
+    def create_upload_bucket(self):
+        return Bucket(
+            self,
+            f"{self.stack_name}UploadBucket",
+            removal_policy=RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE,
+            access_control=BucketAccessControl.BUCKET_OWNER_FULL_CONTROL
+        )
+
+    # API GATEWAY
+    def add_api_resource(self, path: list[str], method: str, handler: OurFunction):
         current_resource = self.api.root
         for p in path:
             current_resource = current_resource.add_resource(p)

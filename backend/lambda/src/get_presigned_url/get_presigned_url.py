@@ -8,12 +8,12 @@ s3_client = boto3.client('s3', "us-west-2")
 
 def lambda_handler(event, context):
     try:
-        offer_id = event['pathParameters']['offer_id']
+        creator_id = event['pathParameters']['creator_id']
         user_id = event['pathParameters']['user_id']
         bucket_name = os.environ['BUCKET_NAME']
         expiration = 3600
 
-        directory = f'{user_id}/{offer_id}/image'
+        directory = f'{user_id}/{creator_id}/image'
         response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=directory)
         number_of_objects_in_directory = len(response.get('Contents', [1]))
         image_name = f"{number_of_objects_in_directory}.jpg"
