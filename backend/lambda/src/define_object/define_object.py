@@ -1,6 +1,7 @@
 
 import base64
 import json
+import traceback
 import uuid
 from typing import Any
 
@@ -29,6 +30,26 @@ runtime = boto3.client("bedrock-runtime", region)
 s3_client = boto3.client("s3", region)
 dynamodb = boto3.resource("dynamodb", region)
 
+
+def get_combines_results(creator_results, result):
+    all_items = {}
+    for creator_result in creator_results:
+        data = creator_result["result"]
+        if not isinstance(data, dict):
+            data = json.loads(creator_result["result"])
+        print(data)
+        for key, value in data.items():
+            if all_items.get(key) is None or value is not None:
+                all_items.update({key: value})
+
+    if not isinstance(result, dict):
+        result = json.loads(result)
+
+    for key, value in result.items():
+        if all_items.get(key) is None or value is not None:
+            all_items.update({key: value})
+
+    return all_items
 
 def lambda_handler(event, context):
     body = json.loads(event['body'])
@@ -75,6 +96,14 @@ def lambda_handler(event, context):
     )
     response_body = json.loads(response.get("body").read())
     result = response_body['content'][0]['text']
+
+    responses = dynamodb.Table(action_table).scan().get('Items')
+    creator_results = []
+    for response in responses:
+        if response['creator_id'] == creator_id and response["action_name"] == "define_object":
+            creator_results.append(response)
+
+    result = get_combines_results(creator_results, result)
 
     item = get_action_item(user_id, creator_id, result)
     dynamodb.Table(action_table).put_item(Item=item)

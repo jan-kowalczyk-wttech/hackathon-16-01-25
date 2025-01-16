@@ -27,24 +27,21 @@ Please ensure the response is in valid JSON format.
 Assistant:"""
 
 def get_empty_items(creator_results):
-    try:
-        all_items = {}
-        for creator_result in creator_results:
-            data = json.loads(creator_result["result"])
-            print(data)
-            for key, value in data.items():
-                if all_items.get(key) is None:
-                    all_items.update({key: value})
+    all_items = {}
+    for creator_result in creator_results:
+        data = creator_result["result"]
+        if not isinstance(data, dict):
+            data = json.loads(data)
 
-        null_items = {}
-        for key, value in all_items.items():
-            if value is None:
-                null_items.update({key: value})
+        print(data)
+        for key, value in data.items():
+            if all_items.get(key) is None:
+                all_items.update({key: value})
 
-        return null_items
-    except Exception as e:
-        print(e)
-        traceback.print_exc()
+    print("all_items")
+    print(all_items)
+    return all_items
+
 
 def lambda_handler(event, context):
     try:
@@ -60,6 +57,7 @@ def lambda_handler(event, context):
 
         empty_items = get_empty_items(creator_results)
 
+
         body = json.dumps(
             {
                 "anthropic_version": "bedrock-2023-05-31",
@@ -73,6 +71,8 @@ def lambda_handler(event, context):
                 ],
             }
         )
+
+        print(body)
 
         response = runtime.invoke_model(
             modelId="anthropic.claude-3-sonnet-20240229-v1:0",
