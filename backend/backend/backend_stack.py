@@ -1,8 +1,9 @@
 import aws_cdk.aws_dynamodb as dynamodb
 from aws_cdk import (
-    Stack, aws_lambda as _lambda, Duration, aws_apigateway, RemovalPolicy
+    Stack, aws_lambda as _lambda, Duration, aws_apigateway, RemovalPolicy, aws_bedrock
 )
 from aws_cdk.aws_apigateway import LambdaIntegration
+from aws_cdk.aws_iam import PolicyStatement, Effect
 from aws_cdk.aws_lambda import LayerVersion, Function
 from aws_cdk.aws_s3 import Bucket, BucketAccessControl
 from constructs import Construct
@@ -79,6 +80,7 @@ class BackendStack(Stack):
         )
         self.offers_table.grant_read_data(get_offer_by_id)
         self.add_api_resource(["get_offer","{id}"], "GET", get_offer_by_id)
+
         return get_offer_by_id
 
     def define_object_lambda(self):
@@ -89,6 +91,13 @@ class BackendStack(Stack):
             code=_lambda.Code.from_asset(f"{LAMBDA_SRC}/define_object"),
             handler="define_object.lambda_handler",
             timeout=Duration.minutes(1),
+            initial_policy=[
+                PolicyStatement(
+                    effect=Effect.ALLOW,
+                    actions= ['bedrock:InvokeModel'],
+                    resources=['*']
+                )
+            ],
             environment={
                 'BUCKET_NAME': self.upload_bucket.bucket_name
             }
@@ -129,5 +138,3 @@ class BackendStack(Stack):
         for p in path:
             current_resource = current_resource.add_resource(p)
         current_resource.add_method(method, LambdaIntegration(handler))
-
-
