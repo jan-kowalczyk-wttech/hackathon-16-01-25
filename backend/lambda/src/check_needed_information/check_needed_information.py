@@ -1,6 +1,4 @@
 import traceback
-import uuid
-from typing import Any
 
 import boto3
 import os
@@ -77,7 +75,7 @@ def lambda_handler(event, context):
         )
 
         response = runtime.invoke_model(
-            modelId="anthropic.claude-3-haiku-20240307-v1:0",
+            modelId="anthropic.claude-3-sonnet-20240229-v1:0",
             body=body
         )
 
@@ -87,7 +85,7 @@ def lambda_handler(event, context):
 
         return {
             'statusCode': 200,
-            'body': json.dumps({result})
+            'body': json.dumps(result)
         }
     except Exception as e:
         print(e)
