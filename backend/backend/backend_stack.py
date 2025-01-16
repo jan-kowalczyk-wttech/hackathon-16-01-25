@@ -3,7 +3,7 @@ from aws_cdk import (
     Stack, aws_lambda as _lambda, Duration, aws_apigateway, RemovalPolicy
 )
 from aws_cdk.aws_apigateway import LambdaIntegration
-from aws_cdk.aws_lambda import LayerVersion
+from aws_cdk.aws_lambda import LayerVersion, Function
 from aws_cdk.aws_s3 import Bucket, BucketAccessControl
 from constructs import Construct
 
@@ -27,6 +27,7 @@ class BackendStack(Stack):
         self.api = aws_apigateway.RestApi(self, f"{self.stack_name}BackendApi", deploy=True)
 
         self.presigned_url = self.get_presigned_url_lambda(dependency_layer)
+        self.list_offers = self.get_list_offers_lambda()
 
     def get_presigned_url_lambda(self, dependency_layer: LayerVersion):
         presigned_url = OurFunction(
@@ -44,6 +45,25 @@ class BackendStack(Stack):
         self.upload_bucket.grant_read_write(presigned_url)
         self.add_api_resource("get-presigned-url", "GET", presigned_url)
         return presigned_url
+
+    def get_list_offers_lambda(self):
+        list_offers = Function(
+            self,
+            f"{self.stack_name}ListOffersLambda",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            code=_lambda.Code.from_asset(f"{LAMBDA_SRC}/list_offers"),
+            handler="list_offers.lambda_handler",
+            timeout=Duration.minutes(1),
+            environment={
+                'OFFERS_TABLE': self.offers_table.table_name
+            }
+        )
+        self.offers_table.grant_read_data(list_offers)
+        self.add_api_resource("list-offers", "GET", list_offers)
+        return list_offers
+
+
+
 
     def create_lambda_dependency_layer(self):
         return _lambda.LayerVersion(
@@ -72,5 +92,5 @@ class BackendStack(Stack):
           removal_policy=RemovalPolicy.DESTROY
       )
 
-    def add_api_resource(self, path: str, method: str, handler: OurFunction):
+    def add_api_resource(self, path: str, method: str, handler: Function):
         self.api.root.add_resource(path).add_method(method, LambdaIntegration(handler))
