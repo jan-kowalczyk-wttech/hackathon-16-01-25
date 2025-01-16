@@ -1,11 +1,13 @@
 import json
+import os
+
 import boto3
 
 s3_client = boto3.client('s3', "us-west-2")
 
 def lambda_handler(event, context):
-    bucket_name = "s3bucketstack-uploadbucketd2c1da78-r81cvprwbvek"
-    object_name = "text.txt"
+    bucket_name = os.environ['BUCKET_NAME']
+    object_name = "text.jpg"
     expiration = 3600
 
     try:
