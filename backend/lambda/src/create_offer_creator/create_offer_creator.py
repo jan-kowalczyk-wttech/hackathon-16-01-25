@@ -37,7 +37,7 @@ def lambda_handler(event, context):
         table.put_item(Item=item)
         return {
             'statusCode': 201,
-            'body': json.dumps({'message': f'Offer creator {id} created successfully'}),
+            'body': json.dumps({"creator_id": id}),
         }
     except Exception as e:
         print(e)
