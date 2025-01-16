@@ -25,6 +25,7 @@ class BackendStack(Stack):
 
         self.offers_table = self.create_table_offers()
         self.offer_creators_table = self.create_table_offer_creators()
+        self.actions_table = self.create_table_actions()
 
         self.api = aws_apigateway.RestApi(self, f"{self.stack_name}BackendApi", deploy=True)
         self.presigned_url = self.get_presigned_url_lambda(dependency_layer)
@@ -34,7 +35,6 @@ class BackendStack(Stack):
         self.check_input = self.check_input_lambda()
         self.categorize_object = self.categorize_object_lambda()
         self.define_object = self.define_object_lambda()
-        
         
         self.check_needed_information = self.check_needed_information_lambda()
         self.create_offer_creator_lambda = self.create_offer_creator_lambda()
@@ -216,7 +216,7 @@ class BackendStack(Stack):
           partition_key=dynamodb.Attribute(name="id",type=dynamodb.AttributeType.STRING),
           billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
           removal_policy=RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE
-      )
+        )
 
     def create_table_offer_creators(self):
         table = dynamodb.Table(
@@ -233,6 +233,15 @@ class BackendStack(Stack):
         )
 
         return table
+
+    def create_table_actions(self):
+        return dynamodb.Table(
+          self,
+      f"{self.stack_name}Actions",
+          partition_key=dynamodb.Attribute(name="id",type=dynamodb.AttributeType.STRING),
+          billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+          removal_policy=RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE
+      )
 
     def get_active_creator_lambda(self):
         get_active_creator = Function(
