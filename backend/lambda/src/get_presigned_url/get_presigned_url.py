@@ -9,10 +9,9 @@ def lambda_handler(event, context):
     expiration = 3600
 
     try:
-        # response = s3_client.generate_presigned_url('put_object',
-        #                                             Params={'Bucket': bucket_name, 'Key': object_name},
-        #                                             ExpiresIn=expiration)
-        response = ""
+        response = s3_client.generate_presigned_url('put_object',
+                                                    Params={'Bucket': bucket_name, 'Key': object_name},
+                                                    ExpiresIn=expiration)
     except Exception as e:
         return {
             'statusCode': 500,

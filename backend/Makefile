@@ -1,10 +1,9 @@
 
-
 install:
 	# To install poetry dependencies and lambda dependencies
 	poetry install && ./lambda_dep_init.sh
-deploy:
-	cdk deploy --all
-watch:
+dev:
+	ENV=${USER} cdk deploy --all
+dev-watch:
 	# To use live reload
-	cdk watch
+	ENV=${USER} cdk watch
