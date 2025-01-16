@@ -11,17 +11,18 @@ def lambda_handler(event, context):
     user_id = event['pathParameters']['user_id']
 
     try:
-        response = table.query(
-            IndexName='UserIdIndex',
-            KeyConditionExpression=Key('user_id').eq(user_id),
-            FilterExpression=Attr('is_active').eq(True)
-        )
-        items = response.get('Items', [])
-        if not items:
+        response = table.scan().get('Items')
+        active_item = None
+        for item in response:
+            if item['user_id'] == user_id and item['is_active'] == True:
+                active_item = item
+
+        if active_item is None:
             return {
                 'statusCode': 404,
                 'body': json.dumps({'error': 'No active offer creators found'})
             }
+
     except Exception as e:
         return {
             'statusCode': 500,
@@ -30,5 +31,5 @@ def lambda_handler(event, context):
 
     return {
         'statusCode': 200,
-        'body': json.dumps({'offer_creator': items[0]})
+        'body': json.dumps({'offer_creator': active_item})
     }

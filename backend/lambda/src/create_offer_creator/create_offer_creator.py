@@ -29,20 +29,16 @@ def lambda_handler(event, context):
                         ':val': False
                     }
                 )
-
-
         item = {
             'id': id,
             'user_id': user_id,
             'is_active': True
         }
         table.put_item(Item=item)
-
         return {
             'statusCode': 201,
             'body': json.dumps({'message': f'Offer creator {id} created successfully'}),
         }
-
     except Exception as e:
         print(e)
         traceback.print_exception(type(e), value=e, tb=e.__traceback__)
