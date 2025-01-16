@@ -1,6 +1,9 @@
 
 import base64
 import json
+import uuid
+from typing import Any
+
 import boto3
 import os
 
@@ -26,6 +29,7 @@ Assistant:"""
 region = "us-west-2"
 runtime = boto3.client("bedrock-runtime", region)
 s3_client = boto3.client("s3", region)
+dynamodb = boto3.resource("dynamodb", region)
 
 
 def lambda_handler(event, context):
@@ -33,6 +37,7 @@ def lambda_handler(event, context):
     user_id = body.get("user_id")
     creator_id = body.get("creator_id")
     bucket_name = os.environ['BUCKET_NAME']
+    action_table = os.environ['ACTIONS_TABLE']
 
     directory = f'{user_id}/{creator_id}/image'
     response = s3_client.list_objects_v2(Bucket=bucket_name, Prefix=directory)
@@ -71,8 +76,23 @@ def lambda_handler(event, context):
         body=body
     )
     response_body = json.loads(response.get("body").read())
+    result = response_body['content'][0]['text']
+
+    item = get_action_item(user_id, creator_id, result)
+    dynamodb.Table(action_table).put_item(Item=item)
 
     return {
         "statusCode": 200,
-        "body": json.dumps(response_body['content'][0]['text'])
+        "body": json.dumps(result)
+    }
+
+def get_action_item(user_id: str, creator_id: str, result: Any):
+    id = str(uuid.uuid4())
+    action_name = "define_object"
+    return {
+        "id": id,
+        "user_id": user_id,
+        "creator_id": creator_id,
+        "action_name": action_name,
+        "result": result
     }

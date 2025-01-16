@@ -125,11 +125,13 @@ class BackendStack(Stack):
                 )
             ],
             environment={
-                'BUCKET_NAME': self.upload_bucket.bucket_name
+                'BUCKET_NAME': self.upload_bucket.bucket_name,
+                'ACTIONS_TABLE': self.actions_table.table_name
             }
         )
         self.offers_table.grant_read_write_data(define_object)
         self.upload_bucket.grant_read_write(define_object)
+        self.actions_table.grant_read_write_data(define_object)
         self.add_api_resource(["define-object"], "POST", define_object)
         return define_object
     def create_offer_creator_lambda(self):

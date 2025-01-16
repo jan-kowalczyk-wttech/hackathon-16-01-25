@@ -2,6 +2,7 @@
 import base64
 import json
 import uuid
+from typing import Any
 
 import boto3
 import os
@@ -21,7 +22,6 @@ region = "us-west-2"
 runtime = boto3.client("bedrock-runtime", region)
 s3_client = boto3.client("s3", region)
 dynamodb = boto3.resource("dynamodb", region)
-action_name = "categorize_object"
 
 
 def lambda_handler(event, context):
@@ -71,9 +71,21 @@ def lambda_handler(event, context):
     response_body = json.loads(response.get("body").read())
     result = response_body['content'][0]['text']
 
-    dynamodb.Table(action_table).put_item(Item={"id": str(uuid.uuid4()), "user_id": user_id, "creator_id": creator_id, "action_name": action_name, result: result})
+    item = get_action_item(user_id, creator_id, result)
+    dynamodb.Table(action_table).put_item(Item=item)
 
     return {
         "statusCode": 200,
         "body": json.dumps(result)
+    }
+
+def get_action_item(user_id: str, creator_id: str, result: Any):
+    id = str(uuid.uuid4())
+    action_name = "categorize_object"
+    return {
+        "id": id,
+        "user_id": user_id,
+        "creator_id": creator_id,
+        "action_name": action_name,
+        "result": result
     }
