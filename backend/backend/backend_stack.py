@@ -29,7 +29,6 @@ class BackendStack(Stack):
         self.list_offers = self.get_list_offers_lambda()
         self.get_offer_by_id = self.get_offer_by_id_lambda()
 
-        self.check_input = self.check_input_lambda()
         self.categorize_object = self.categorize_object_lambda()
         self.define_object = self.define_object_lambda()
         
@@ -38,19 +37,6 @@ class BackendStack(Stack):
         self.active_creator_lambda = self.get_active_creator_lambda()
 
     # LAMBDAS
-    def check_input_lambda(self):
-        check_input = OurFunction(
-            self,
-            f"{self.stack_name}CheckInputLambda",
-            runtime=_lambda.Runtime.PYTHON_3_12,
-            code=_lambda.Code.from_asset(f"{LAMBDA_SRC}/check_input"),
-            handler="check_input.lambda_handler",
-            timeout=Duration.minutes(1),
-        )
-        self.offers_table.grant_read_write_data(check_input)
-        self.upload_bucket.grant_read_write(check_input)
-        self.add_api_resource(["check-input"], "POST", check_input)
-        return check_input
     def get_presigned_url_lambda(self):
         presigned_url = OurFunction(
             self,
