@@ -19,7 +19,6 @@ Please analyze this image and provide information in JSON format with the follow
 - cover_type: (hardcover/softcover/other, or null if not visible)
 - condition: (book's physical condition if assessable from image, or null if not clear)
 - description: (create an engaging marketing description highlighting the book's key features, condition, and appeal to potential readers. Focus on unique selling points, special features, and why someone should be interested in this book. Use persuasive and professional language.)
-- answer: (maintain conversation with user and ask about missing fields)
 Please ensure the response is in valid JSON format.
 If any information cannot be determined from the image, use null for that field.
 Feel free to include any relevant details or observations in the answer field.

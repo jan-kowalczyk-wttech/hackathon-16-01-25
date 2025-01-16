@@ -1,4 +1,3 @@
-
 import base64
 import json
 import uuid
@@ -12,7 +11,6 @@ prompt = """
 Human:
 Please analyze this image and provide information in JSON format with the following fields:
 - is_book: (true/false)
-- answer: (maintain conversation with user)
 Please ensure the response is in valid JSON format.
 Feel free to include any relevant details or observations in the answer field.
 
