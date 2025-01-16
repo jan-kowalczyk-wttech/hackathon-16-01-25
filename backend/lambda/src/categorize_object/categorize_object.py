@@ -8,17 +8,9 @@ prompt = """
 
 Human:
 Please analyze this image and provide information in JSON format with the following fields:
-- title: (book's title, or null if not visible)
-- author: (author's name, or null if not visible)
-- isbn: (ISBN number if visible, or null if not present)
-- language: (book's language, or null if not certain)
-- publisher: (publisher's name and year of publication, or null if not visible)
-- cover_type: (hardcover/softcover/other, or null if not visible)
-- condition: (book's physical condition if assessable from image, or null if not clear)
-- description: (create an engaging marketing description highlighting the book's key features, condition, and appeal to potential readers. Focus on unique selling points, special features, and why someone should be interested in this book. Use persuasive and professional language.)
-- answer: (maintain conversation with user and ask about missing fields)
+- is_book: (true/false)
+- answer: (maintain conversation with user)
 Please ensure the response is in valid JSON format.
-If any information cannot be determined from the image, use null for that field.
 Feel free to include any relevant details or observations in the answer field.
 
 Assistant:"""
