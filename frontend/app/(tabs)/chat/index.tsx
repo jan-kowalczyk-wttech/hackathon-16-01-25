@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { StyleSheet, View, FlatList } from 'react-native';
+import { useState, useEffect } from 'react';
+import { StyleSheet, View, FlatList, Text } from 'react-native';
 import { MessageInput } from '../../(components)/chat/MessageInput';
 import { MessageBubble } from '../../(components)/chat/MessageBubble';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Message {
   id: string;
@@ -13,29 +14,34 @@ interface Message {
 
 export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [username, setUsername] = useState<string>('');
 
-  const addMessage = (type: 'text' | 'image' | 'audio', content: string) => {
+  useEffect(() => {
+    // Load username when chat screen is mounted
+    loadUsername();
+  }, []);
+
+  const loadUsername = async () => {
+    try {
+      const savedUsername = await AsyncStorage.getItem('username');
+      if (savedUsername) {
+        setUsername(savedUsername);
+      }
+    } catch (error) {
+      console.error('Error loading username:', error);
+    }
+  };
+
+  const addMessage = async (type: 'text' | 'image' | 'audio', content: string, is_user: boolean) => {
     const newMessage: Message = {
       id: Date.now().toString(),
       type,
       content,
       timestamp: new Date().toLocaleTimeString(),
-      isUser: true,
+      isUser: is_user,
     };
 
     setMessages(prevMessages => [newMessage, ...prevMessages]);
-
-    // Simulate sending to server
-    setTimeout(() => {
-      const response: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'text',
-        content: 'Your offer has been received. We will review it shortly.',
-        timestamp: new Date().toLocaleTimeString(),
-        isUser: false,
-      };
-      setMessages(prevMessages => [response, ...prevMessages]);
-    }, 1000);
   };
 
   return (
@@ -55,9 +61,10 @@ export default function ChatScreen() {
         style={styles.list}
       />
       <MessageInput
-        onSendText={(text) => addMessage('text', text)}
-        onSendImage={(uri) => addMessage('image', uri)}
-        onSendAudio={(uri) => addMessage('audio', uri)}
+        username={username}
+        onSendText={(text, is_user) => addMessage('text', text, is_user)}
+        onSendImage={(uri) => addMessage('image', uri, true)}
+        onSendAudio={(uri) => addMessage('audio', uri, true)}
       />
     </View>
   );

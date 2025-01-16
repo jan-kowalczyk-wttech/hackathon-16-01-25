@@ -3,25 +3,62 @@ import { StyleSheet, View, TextInput, TouchableOpacity, Alert } from 'react-nati
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
+import { sendToAWS } from '../../(services)/api/lambda';
 import * as FileSystem from 'expo-file-system';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
-
+const PRESIGNED_ENDPOINT_URL = 'https://yh8cmasjvk.execute-api.us-west-2.amazonaws.com/prod/get-presigned-url';
 interface MessageInputProps {
-  onSendText: (text: string) => void;
+  username: string;
+  onSendText: (text: string, is_user: boolean) => void;
   onSendImage: (uri: string) => void;
   onSendAudio: (uri: string) => void;
 }
 
-export function MessageInput({ onSendText, onSendImage, onSendAudio }: MessageInputProps) {
+async function uploadImageToS3(presignedUrl: string, file: string) {
+  try {
+      const response = await fetch(presignedUrl, {
+          method: 'PUT',
+          body: file
+      });
+
+      if (!response.ok) {
+          throw new Error('Failed to upload image to S3');
+      }
+
+      console.log('Image uploaded successfully');
+  } catch (error) {
+      console.error('Error uploading image:', error);
+  }
+}
+
+
+
+export function MessageInput({ username, onSendText, onSendImage, onSendAudio }: MessageInputProps) {
   const [text, setText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const recordingRef = useRef<Audio.Recording | null>(null);
 
-  const handleSendText = () => {
+  const handleSendText = async () => {
     if (text.trim()) {
-      onSendText(text.trim());
+
+      // data with user message and bool is_image set to false
+      const data = {
+        message: text.trim(),
+        is_image: false,
+        timestamp: new Date().toISOString(),
+        user_id: username  // Include username in the request
+      };
+      onSendText(text.trim(), true);
       setText('');
+      
+      try {
+        // Send message to Lambda
+        const response = await sendToAWS(data);
+        onSendText(response.message, false);
+      } catch (error) {
+        console.error('Error sending message to Lambda:', error);
+        Alert.alert('Error', 'Failed to send message');
+      }
     }
   };
 
@@ -43,44 +80,66 @@ export function MessageInput({ onSendText, onSendImage, onSendAudio }: MessageIn
 
   const uploadImage = async (uri: string) => {
     try {
-      // First try to upload to server
-      const formData = new FormData();
-      formData.append('image', {
-        uri,
-        type: 'image/jpeg',
-        name: 'photo.jpg',
-      } as any);
+      // Step 1: Get presigned URL
 
-      const response = await fetch(`${API_URL}/api/chat/upload`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const get_presigned_url = async () => {
+        const result = await fetch("https://wpusf87tnj.execute-api.us-west-2.amazonaws.com/prod/get-presigned-url")
+        const body = await result.json()
+        return body["presigned_url"]
+      }
+
+
+      // const response = await fetch(PRESIGNED_ENDPOINT_URL, {
+      //   method: 'GET',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      // });
+
+      // const data = await response.json();
+      // if (!response.ok) {
+      //   throw new Error('Failed to get presigned URL');
+      // }
+
+      // console.log('data', data);
+      // const presignedUrl = data["presigned_url"]
+
+      console.log("uri", uri)
+
+      // Step 2: Read the image file and create blob
+      const presignedUrl = await get_presigned_url()
+      const imageResponse = await fetch(uri);
+      const imageBlob = await imageResponse.blob();
+
+      // Add these debug logs
+      console.log('Presigned URL:', presignedUrl);
+      console.log('Image blob size:', imageBlob.size);
+      console.log('Image blob type:', imageBlob.type);
+      // console.log('Image blob:', imageBlob);
+
+      // const file = new File([imageBlob], 'image.jpg', { type: 'image/jpeg' });
+
+      // const file = await fs.readFileSync(uri);
+
+      // const blob = new Blob([file], { type: 'image/jpeg' });
+      
+      const uploadResponse = await fetch(presignedUrl, {
+        method: 'PUT',
+        body: imageBlob
       });
 
-      if (!response.ok) {
-        throw new Error('Server upload failed');
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed with status: ${uploadResponse.status}`);
       }
 
-      const { imageUrl } = await response.json();
-      onSendImage(imageUrl);
+      // Get the public URL from the presigned URL by removing query parameters
+      const publicUrl = presignedUrl.split('?')[0];
+      onSendImage(publicUrl);
+      Alert.alert('Success', 'Image uploaded successfully');
 
     } catch (error) {
-      console.warn('Server upload failed, using mock storage:', error);
-      
-      // Fallback to mock storage if server is unavailable
-      try {
-        // Copy image to app's local storage as a mock solution
-        const fileName = `${Date.now()}.jpg`;
-        const newUri = FileSystem.documentDirectory + fileName;
-        await FileSystem.copyAsync({ from: uri, to: newUri });
-        
-        onSendImage(newUri);
-      } catch (mockError) {
-        console.error('Mock storage failed:', mockError);
-        Alert.alert('Error', 'Failed to save image');
-      }
+      console.error('Upload error:', error);
+      Alert.alert('Error', 'Failed to upload image');
     }
   };
 
