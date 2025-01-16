@@ -5,6 +5,8 @@ import traceback
 import boto3
 from uuid import uuid4
 
+from boto3.dynamodb.conditions import Key
+
 dynamodb = boto3.resource('dynamodb')
 table_name = os.environ['OFFER_CREATORS_TABLE']
 table = dynamodb.Table(table_name)
@@ -15,9 +17,12 @@ def lambda_handler(event, context):
         user_id = body['user_id']
         id = str(uuid4())
 
-        existing_items = table.scan().get('Items')
-        for item in existing_items:
-            if item['user_id'] == user_id:
+        active_creators = table.query(
+            IndexName='UserIdIndex',
+            KeyConditionExpression=Key('user_id').eq(user_id),
+            FilterExpression=Key('is_active').eq(True)
+        )
+        for item in active_creators:
                 print(f'Offer creator {user_id} already exists')
                 print(f'Shutting down old offer creator {item["id"]}')
                 table.update_item(
