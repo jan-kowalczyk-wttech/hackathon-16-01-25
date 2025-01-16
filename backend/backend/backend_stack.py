@@ -35,6 +35,7 @@ class BackendStack(Stack):
         self.categorize_object = self.categorize_object_lambda()
         self.define_object = self.define_object_lambda()
         self.create_offer_creator_lambda = self.create_offer_creator_lambda()
+        self.active_creator_lambda = self.get_active_creator_lambda()
 
     def check_input_lambda(self):
         check_input = Function(
@@ -206,6 +207,22 @@ class BackendStack(Stack):
         )
 
         return table
+
+    def get_active_creator_lambda(self):
+        get_active_creator = Function(
+            self,
+            f"{self.stack_name}GetActiveCreatorLambda",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            code=_lambda.Code.from_asset(f"{LAMBDA_SRC}/get_active_creator"),
+            handler="get_active_creator.lambda_handler",
+            timeout=Duration.minutes(1),
+            environment={
+                'OFFER_CREATORS_TABLE': self.offer_creators_table.table_name
+            }
+        )
+        self.offer_creators_table.grant_read_data(get_active_creator)
+        self.add_api_resource(["get-active-creator", '{user_id}'], "GET", get_active_creator)
+        return get_active_creator
 
     def add_api_resource(self, path: list[str], method: str, handler: Function):
         current_resource = self.api.root
