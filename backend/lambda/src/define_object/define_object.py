@@ -43,13 +43,8 @@ def lambda_handler(event, context):
         {
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": 1000,
+            "system": prompt,
             "messages": [
-                {
-                    "role": "system",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                    ],
-                },
                 {
                     "role": "user",
                     "content": [
