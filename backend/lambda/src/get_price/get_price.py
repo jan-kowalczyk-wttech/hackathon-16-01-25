@@ -17,7 +17,8 @@ runtime = boto3.client("bedrock-runtime", region)
 
 
 def lambda_handler(event, context):
-    message = event['body']["message"]
+    body = json.loads(event['body'])
+    message = body["message"]
 
     body = json.dumps(
         {

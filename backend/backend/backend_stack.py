@@ -26,6 +26,8 @@ class BackendStack(Stack):
 
         self.api = aws_apigateway.RestApi(self, f"{self.stack_name}BackendApi", deploy=True)
         self.presigned_url = self.get_presigned_url_lambda()
+        self.get_image_lambda = self.get_image_lambda()
+
         self.list_offers = self.get_list_offers_lambda()
         self.get_offer_by_id = self.get_offer_by_id_lambda()
 
@@ -55,7 +57,24 @@ class BackendStack(Stack):
         self.upload_bucket.grant_read_write(presigned_url)
         self.add_api_resource(["get-presigned-url","{user_id}","{creator_id}"], "GET", presigned_url)
         return presigned_url
-    
+
+    # LAMBDAS
+    def get_image_lambda(self):
+        presigned_url = OurFunction(
+            self,
+            f"{self.stack_name}GetImageLambda",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            code=_lambda.Code.from_asset(f"{LAMBDA_SRC}/fetch_image"),
+            handler="fetch_image.lambda_handler",
+            timeout=Duration.minutes(1),
+            environment={
+                'BUCKET_NAME': self.upload_bucket.bucket_name
+            }
+        )
+        self.upload_bucket.grant_read_write(presigned_url)
+        self.add_api_resource(["fetch-image","{user_id}","{creator_id}"], "GET", presigned_url)
+        return presigned_url
+
     def get_list_offers_lambda(self):
         list_offers = OurFunction(
             self,
