@@ -36,7 +36,7 @@ def lambda_handler(event, context):
         Key=f"{uuid}/image.jpg"
     )
 
-    image_bytes = image.read()
+    image_bytes = image['Body'].read()
     encoded_image = base64.b64encode(image_bytes).decode("utf-8")
 
     body = json.dumps(
