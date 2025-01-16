@@ -61,7 +61,7 @@ def lambda_handler(event, context):
     )
 
     response = runtime.invoke_model(
-        modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+        modelId="anthropic.claude-3-haiku-20240307-v1:0",
         body=body
     )
 
