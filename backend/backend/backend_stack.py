@@ -35,7 +35,8 @@ class BackendStack(Stack):
             self,
             "GetPresignedUrlApi",
             handler=self.get_presigned_url_lambda,
-            proxy=False
+            proxy=False,
+            deploy=True
         )
 
         items = self.api.root.add_resource("items")
