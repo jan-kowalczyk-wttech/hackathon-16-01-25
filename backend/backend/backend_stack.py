@@ -30,7 +30,8 @@ class BackendStack(Stack):
         self.presigned_url = self.get_presigned_url_lambda(dependency_layer)
         self.list_offers = self.get_list_offers_lambda()
         self.get_offer_by_id = self.get_offer_by_id_lambda()
-
+        
+        self.categorize_object = self.categorize_object_lambda()
         self.define_object = self.define_object_lambda()
 
     def get_presigned_url_lambda(self, dependency_layer: LayerVersion):
@@ -82,6 +83,31 @@ class BackendStack(Stack):
         self.add_api_resource(["get_offer","{id}"], "GET", get_offer_by_id)
 
         return get_offer_by_id
+    
+    def categorize_object_lambda(self):
+        categorize_object = Function(
+            self,
+            f"{self.stack_name}CategorizeObjectLambda",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            code=_lambda.Code.from_asset(f"{LAMBDA_SRC}/categorize_object"),
+            handler="categorize_object.lambda_handler",
+            timeout=Duration.minutes(1),
+            initial_policy=[
+                PolicyStatement(
+                    effect=Effect.ALLOW,
+                    actions= ['bedrock:InvokeModel'],
+                    resources=['*']
+                )
+            ],
+            environment={
+                'BUCKET_NAME': self.upload_bucket.bucket_name
+            }
+        )
+        self.offers_table.grant_read_write_data(categorize_object)
+        self.upload_bucket.grant_read_write(categorize_object)
+        self.add_api_resource(["categorize-object"], "POST", categorize_object)
+        return categorize_object
+    
 
     def define_object_lambda(self):
         define_object = Function(
