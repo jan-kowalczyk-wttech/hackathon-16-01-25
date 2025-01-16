@@ -224,6 +224,7 @@ class BackendStack(Stack):
         return dynamodb.Table(
           self,
       f"{self.stack_name}Actions",
+          table_name= f"{self.stack_name}Actions",
           partition_key=dynamodb.Attribute(name="id",type=dynamodb.AttributeType.STRING),
           billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
           removal_policy=RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE

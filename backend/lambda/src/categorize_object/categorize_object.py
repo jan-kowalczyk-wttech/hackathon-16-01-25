@@ -71,7 +71,7 @@ def lambda_handler(event, context):
     response_body = json.loads(response.get("body").read())
     result = response_body['content'][0]['text']
 
-    dynamodb.Table(action_table).put_item(Item={"id": str(uuid.uuid4()), "user_id": user_id, "action_name": action_name, result: result})
+    dynamodb.Table(action_table).put_item(Item={"id": str(uuid.uuid4()), "user_id": user_id, "creator_id": creator_id, "action_name": action_name, result: result})
 
     return {
         "statusCode": 200,
